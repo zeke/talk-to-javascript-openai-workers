@@ -1,18 +1,36 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Hono } from 'hono';
 
-export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
-	},
-} satisfies ExportedHandler<Env>;
+const app = new Hono<{ Bindings: Env }>();
+
+const DEFAULT_INSTRUCTIONS = `You are helpful and have some tools installed.
+
+In the tools you have the ability to control a robot hand.
+`;
+
+app.post('/rtc-connect', async (c) => {
+	const body = await c.req.text();
+	const url = new URL('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01');
+	url.searchParams.set('instructions', DEFAULT_INSTRUCTIONS);
+	url.searchParams.set('voice', 'ash');
+
+	const response = await fetch(url.toString(), {
+		method: 'POST',
+		body,
+		headers: {
+			Authorization: `Bearer ${c.env.OPENAI_API_KEY}`,
+			'Content-Type': 'application/sdp',
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error(`OpenAI API error: ${response.status}`);
+	}
+	const sdp = await response.text();
+	return c.body(sdp, {
+		headers: {
+			'Content-Type': 'application/sdp',
+		},
+	});
+});
+
+export default app;
