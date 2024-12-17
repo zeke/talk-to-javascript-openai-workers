@@ -9,7 +9,8 @@ In the tools you have the ability to control a robot hand.
 
 app.post('/rtc-connect', async (c) => {
 	const body = await c.req.text();
-	const url = new URL('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01');
+	const url = new URL('https://api.openai.com/v1/realtime');
+	url.searchParams.set('model', 'gpt-4o-realtime-preview-2024-12-17');
 	url.searchParams.set('instructions', DEFAULT_INSTRUCTIONS);
 	url.searchParams.set('voice', 'ash');
 
