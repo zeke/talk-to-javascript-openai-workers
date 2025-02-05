@@ -36,7 +36,7 @@ peerConnection.ontrack = (event) => {
 	document.body.appendChild(el);
 };
 
-const dataChannel = peerConnection.createDataChannel('response');
+const dataChannel = peerConnection.createDataChannel('oai-events');
 
 function configureData() {
 	console.log('Configuring data channel');
@@ -137,22 +137,30 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 
 	peerConnection.createOffer().then((offer) => {
 		peerConnection.setLocalDescription(offer);
+		fetch('/session')
+			.then((tokenResponse) => tokenResponse.json())
+			.then((data) => {
+				const EPHEMERAL_KEY = data.result.client_secret.value;
+				const baseUrl = 'https://api.openai.com/v1/realtime';
+				const model = 'gpt-4o-realtime-preview-2024-12-17';
+				fetch(`${baseUrl}?model=${model}`, {
+					method: 'POST',
+					body: offer.sdp,
+					headers: {
+						Authorization: `Bearer ${EPHEMERAL_KEY}`,
+						'Content-Type': 'application/sdp',
+					},
+				})
+					.then((r) => r.text())
+					.then((answer) => {
+						// Accept answer from Realtime WebRTC API
+						peerConnection.setRemoteDescription({
+							sdp: answer,
+							type: 'answer',
+						});
+					});
+			});
 
 		// Send WebRTC Offer to Workers Realtime WebRTC API Relay
-		fetch('/rtc-connect', {
-			method: 'POST',
-			body: offer.sdp,
-			headers: {
-				'Content-Type': 'application/sdp',
-			},
-		})
-			.then((r) => r.text())
-			.then((answer) => {
-				// Accept answer from Realtime WebRTC API
-				peerConnection.setRemoteDescription({
-					sdp: answer,
-					type: 'answer',
-				});
-			});
 	});
 });
