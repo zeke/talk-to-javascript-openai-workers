@@ -75,7 +75,9 @@ function configureData() {
 					parameters: {
 						type: 'object',
 						properties: {
-							numberOfFingers: { type: 'string', description: 'Values 1 through 5 of the number of fingers to hold up' },
+							numberOfFingers: {
+								enum: [1, 2, 3, 4, 5],
+								description: 'Values 1 through 5 of the number of fingers to hold up' },
 						},
 					},
 				},
