@@ -128,6 +128,8 @@ dataChannel.addEventListener('message', async (ev) => {
 				},
 			};
 			dataChannel.send(JSON.stringify(event));
+			// Have assistant respond after getting the results
+			dataChannel.send(JSON.stringify({type:"response.create"}));
 		}
 	}
 });
